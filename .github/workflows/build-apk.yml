@@ -5,6 +5,9 @@ on:
     branches: [ main, master ]
   workflow_dispatch:
 
+env:
+  PIP_NO_BUILD_ISOLATION: "1"
+
 jobs:
   build:
     runs-on: ubuntu-22.04
@@ -30,7 +33,7 @@ jobs:
       - name: Instalar Buildozer y Cython
         run: |
           pip install --upgrade pip "setuptools<70" wheel
-          pip install buildozer==1.5.0 cython==0.29.36 virtualenv legacy-cgi
+          pip install buildozer==1.5.0 cython==0.29.37 virtualenv
 
       - name: Compilar APK Debug con Buildozer
         run: |
