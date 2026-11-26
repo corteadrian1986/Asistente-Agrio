@@ -13,6 +13,7 @@ env:
 jobs:
   build:
     runs-on: ubuntu-22.04
+    timeout-minutes: 35
 
     steps:
       - name: Descargar código del repositorio
@@ -32,31 +33,35 @@ jobs:
             zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo5 \
             cmake libffi-dev libssl-dev python3-setuptools
           sudo update-java-alternatives -s java-1.17.0-openjdk-amd64 || true
-          export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
-          export PATH="$JAVA_HOME/bin:$PATH"
-          java -version
 
-      - name: Instalar Buildozer y Cython
+      - name: Configurar pip global y parche cgi
         run: |
           export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
           export PATH="$JAVA_HOME/bin:$PATH"
-          pip install --upgrade pip "setuptools<70" wheel
-          pip install --no-build-isolation buildozer==1.5.0 cython==0.29.37 virtualenv
 
-      - name: Preparar parche cgi y Android SDK con Java 17
-        run: |
-          export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
-          export PATH="$JAVA_HOME/bin:$PATH"
+          mkdir -p ~/.config/pip
+          printf "[global]\nno-build-isolation = true\n" > ~/.config/pip/pip.conf
 
           python3 -c '
           import site, os
           shim = "def parse_header(line):\n    return line, {}\ndef escape(s, quote=False):\n    import html\n    return html.escape(s, quote=quote)\n"
-          paths = list(site.getsitepackages())
-          for p in paths:
+          for p in list(site.getsitepackages()):
               os.makedirs(p, exist_ok=True)
               with open(os.path.join(p, "cgi.py"), "w") as f:
                   f.write(shim)
           '
+
+          pip install --upgrade pip "setuptools<70" wheel
+          pip install buildozer==1.5.0 cython==0.29.37 virtualenv
+
+          for p in $(python3 -c 'import site; print(" ".join(site.getsitepackages()))'); do
+            printf "def parse_header(line):\n    return line, {}\ndef escape(s, quote=False):\n    import html\n    return html.escape(s, quote=quote)\n" > "$p/cgi.py"
+          done
+
+      - name: Preparar Android SDK con Java 17
+        run: |
+          export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+          export PATH="$JAVA_HOME/bin:$PATH"
 
           SDK_DIR="$HOME/.buildozer/android/platform/android-sdk"
           mkdir -p "$SDK_DIR/cmdline-tools" "$SDK_DIR/tools/bin" "$SDK_DIR/licenses"
