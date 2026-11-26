@@ -30,11 +30,11 @@ jobs:
       - name: Instalar Buildozer y Cython
         run: |
           pip install --upgrade pip "setuptools<70" wheel
-          pip install buildozer==1.5.0 cython==0.29.37 virtualenv
+          pip install buildozer==1.5.0 cython==0.29.36 virtualenv
 
       - name: Compilar APK Debug con Buildozer
         run: |
-          rm -rf .buildozer/android/platform/build-arm64-v8a_armeabi-v7a/build/other_builds/kivy*
+          rm -rf .buildozer/android/platform/build-*
           buildozer android debug
 
       - name: Subir APK generado
