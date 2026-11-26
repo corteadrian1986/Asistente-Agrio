@@ -30,7 +30,7 @@ jobs:
       - name: Instalar Buildozer y Cython
         run: |
           pip install --upgrade pip "setuptools<70" wheel
-          pip install buildozer==1.5.0 cython==0.29.36 virtualenv
+          pip install buildozer==1.5.0 cython==0.29.36 virtualenv legacy-cgi
 
       - name: Compilar APK Debug con Buildozer
         run: |
