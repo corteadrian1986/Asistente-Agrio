@@ -20,7 +20,7 @@ version = 0.1.0
 
 # (list) Application requirements
 # (comma separated e.g: requirements = sqlite3,kivy)
-requirements = python3,kivy==2.2.1,pyjnius,urllib3,idna,certifi,gtts
+requirements = python3==3.11.9,kivy==2.2.1,pyjnius,urllib3,idna,certifi,gtts
 
 # (str) Custom source folders for requirements
 # requirements.source.kivy = ../../kivy
