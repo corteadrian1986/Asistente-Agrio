@@ -8,6 +8,7 @@ on:
 env:
   PIP_NO_BUILD_ISOLATION: "1"
   PIP_DISABLE_PIP_VERSION_CHECK: "1"
+  JAVA_HOME: "/usr/lib/jvm/java-17-openjdk-amd64"
 
 jobs:
   build:
@@ -22,22 +23,31 @@ jobs:
         with:
           python-version: '3.10'
 
-      - name: Instalar dependencias del sistema
+      - name: Instalar dependencias del sistema y Java 17
         run: |
           sudo apt-get update
           sudo apt-get install -y \
-            build-essential git zip unzip openjdk-17-jdk \
+            build-essential git zip unzip openjdk-17-jdk wget \
             autoconf automake libtool libltdl-dev pkg-config m4 \
             zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo5 \
             cmake libffi-dev libssl-dev python3-setuptools
+          sudo update-java-alternatives -s java-1.17.0-openjdk-amd64 || true
+          export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+          export PATH="$JAVA_HOME/bin:$PATH"
+          java -version
 
       - name: Instalar Buildozer y Cython
         run: |
+          export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+          export PATH="$JAVA_HOME/bin:$PATH"
           pip install --upgrade pip "setuptools<70" wheel
           pip install --no-build-isolation buildozer==1.5.0 cython==0.29.37 virtualenv
 
-      - name: Preparar parche cgi y Android SDK cmdline-tools
+      - name: Preparar parche cgi y Android SDK con Java 17
         run: |
+          export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+          export PATH="$JAVA_HOME/bin:$PATH"
+
           python3 -c '
           import site, os
           shim = "def parse_header(line):\n    return line, {}\ndef escape(s, quote=False):\n    import html\n    return html.escape(s, quote=quote)\n"
@@ -55,8 +65,8 @@ jobs:
           unzip -q /tmp/cmdline-tools.zip -d "$SDK_DIR/cmdline-tools"
           mv "$SDK_DIR/cmdline-tools/cmdline-tools" "$SDK_DIR/cmdline-tools/latest"
 
-          ln -sf "$SDK_DIR/cmdline-tools/latest/bin/sdkmanager" "$SDK_DIR/tools/bin/sdkmanager"
-          ln -sf "$SDK_DIR/cmdline-tools/latest/bin/avdmanager" "$SDK_DIR/tools/bin/avdmanager"
+          printf '#!/bin/sh\nexport JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64\nexport PATH="$JAVA_HOME/bin:$PATH"\nexec "'"$SDK_DIR/cmdline-tools/latest/bin/sdkmanager"'" "$@"\n' > "$SDK_DIR/tools/bin/sdkmanager"
+          chmod +x "$SDK_DIR/tools/bin/sdkmanager"
 
           printf "8933bad161af4178b1185d1a37fbf41ea5269c55\nd56f5187479451eabf01fb78af6dfcb131a6481e\n24333f8a63b6825ea9c5514f83c2829b004d1fee\n" > "$SDK_DIR/licenses/android-sdk-license"
           printf "84831b9409646a918e30573bab4c9c91346d8abd\n" > "$SDK_DIR/licenses/android-sdk-preview-license"
@@ -65,6 +75,8 @@ jobs:
 
       - name: Compilar APK Debug con Buildozer
         run: |
+          export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+          export PATH="$JAVA_HOME/bin:$PATH"
           rm -rf .buildozer/android/platform/build-*
           buildozer android debug
 
