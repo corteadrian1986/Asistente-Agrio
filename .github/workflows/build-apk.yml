@@ -7,6 +7,8 @@ on:
 
 env:
   PIP_NO_BUILD_ISOLATION: "1"
+  PIP_DISABLE_PIP_VERSION_CHECK: "1"
+  PYTHONNOUSERSITE: "1"
 
 jobs:
   build:
@@ -33,7 +35,7 @@ jobs:
       - name: Instalar Buildozer y Cython
         run: |
           pip install --upgrade pip "setuptools<70" wheel
-          pip install buildozer==1.5.0 cython==0.29.37 virtualenv
+          pip install --no-build-isolation buildozer==1.5.0 cython==0.29.37 virtualenv
 
       - name: Compilar APK Debug con Buildozer
         run: |
