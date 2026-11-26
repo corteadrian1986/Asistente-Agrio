@@ -75,7 +75,7 @@ android.minapi = 24
 # android.sdk = 20
 
 # (str) Android NDK version to use
-# android.ndk = 25b
+android.ndk = 28c
 
 # (int) Android NDK API to use. This is the minimum API you want your APP to support,
 # specifiying the value here will override android.minapi
