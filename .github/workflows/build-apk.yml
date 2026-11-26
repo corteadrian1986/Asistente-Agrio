@@ -8,6 +8,7 @@ on:
 env:
   PIP_NO_BUILD_ISOLATION: "1"
   PIP_DISABLE_PIP_VERSION_CHECK: "1"
+  PIP_CONFIG_FILE: "/tmp/pip.conf"
   JAVA_HOME: "/usr/lib/jvm/java-17-openjdk-amd64"
 
 jobs:
@@ -34,29 +35,46 @@ jobs:
             cmake libffi-dev libssl-dev python3-setuptools
           sudo update-java-alternatives -s java-1.17.0-openjdk-amd64 || true
 
-      - name: Configurar pip global y parche cgi
+          printf "[global]\nno-build-isolation = true\n" > /tmp/pip.conf
+          echo 'PIP_NO_BUILD_ISOLATION=1' | sudo tee -a /etc/environment >/dev/null
+          echo 'PIP_CONFIG_FILE=/tmp/pip.conf' | sudo tee -a /etc/environment >/dev/null
+          echo 'JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64' | sudo tee -a /etc/environment >/dev/null
+
+      - name: Instalar Buildozer y Cython e inyectar cgi
         run: |
           export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
           export PATH="$JAVA_HOME/bin:$PATH"
 
-          mkdir -p ~/.config/pip
-          printf "[global]\nno-build-isolation = true\n" > ~/.config/pip/pip.conf
-
           python3 -c '
-          import site, os
+          import site, os, sysconfig
           shim = "def parse_header(line):\n    return line, {}\ndef escape(s, quote=False):\n    import html\n    return html.escape(s, quote=quote)\n"
-          for p in list(site.getsitepackages()):
-              os.makedirs(p, exist_ok=True)
-              with open(os.path.join(p, "cgi.py"), "w") as f:
+          dirs = set(site.getsitepackages())
+          for key in ("purelib", "platlib"):
+              p = sysconfig.get_path(key)
+              if p:
+                  dirs.add(p)
+          for d in dirs:
+              os.makedirs(d, exist_ok=True)
+              with open(os.path.join(d, "cgi.py"), "w") as f:
                   f.write(shim)
           '
 
           pip install --upgrade pip "setuptools<70" wheel
           pip install buildozer==1.5.0 cython==0.29.37 virtualenv
 
-          for p in $(python3 -c 'import site; print(" ".join(site.getsitepackages()))'); do
-            printf "def parse_header(line):\n    return line, {}\ndef escape(s, quote=False):\n    import html\n    return html.escape(s, quote=quote)\n" > "$p/cgi.py"
-          done
+          python3 -c '
+          import site, os, sysconfig
+          shim = "def parse_header(line):\n    return line, {}\ndef escape(s, quote=False):\n    import html\n    return html.escape(s, quote=quote)\n"
+          dirs = set(site.getsitepackages())
+          for key in ("purelib", "platlib"):
+              p = sysconfig.get_path(key)
+              if p:
+                  dirs.add(p)
+          for d in dirs:
+              os.makedirs(d, exist_ok=True)
+              with open(os.path.join(d, "cgi.py"), "w") as f:
+                  f.write(shim)
+          '
 
       - name: Preparar Android SDK con Java 17
         run: |
