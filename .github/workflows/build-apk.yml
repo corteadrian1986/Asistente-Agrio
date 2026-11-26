@@ -36,10 +36,25 @@ jobs:
           pip install --upgrade pip "setuptools<70" wheel
           pip install --no-build-isolation buildozer==1.5.0 cython==0.29.37 virtualenv
 
+      - name: Preparar parche de compatibilidad cgi y SDK
+        run: |
+          python3 -c '
+          import site, os
+          shim = "def parse_header(line):\n    return line, {}\ndef escape(s, quote=False):\n    import html\n    return html.escape(s, quote=quote)\n"
+          paths = list(site.getsitepackages())
+          for p in paths:
+              os.makedirs(p, exist_ok=True)
+              with open(os.path.join(p, "cgi.py"), "w") as f:
+                  f.write(shim)
+          '
+          mkdir -p ~/.buildozer/android/platform/android-sdk/licenses
+          printf "8933bad161af4178b1185d1a37fbf41ea5269c55\nd56f5187479451eabf01fb78af6dfcb131a6481e\n24333f8a63b6825ea9c5514f83c2829b004d1fee\n" > ~/.buildozer/android/platform/android-sdk/licenses/android-sdk-license
+          printf "84831b9409646a918e30573bab4c9c91346d8abd\n" > ~/.buildozer/android/platform/android-sdk/licenses/android-sdk-preview-license
+
       - name: Compilar APK Debug con Buildozer
         run: |
           rm -rf .buildozer/android/platform/build-*
-          yes | buildozer android debug
+          buildozer android debug
 
       - name: Subir APK generado
         uses: actions/upload-artifact@v4
