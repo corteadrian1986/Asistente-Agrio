@@ -40,41 +40,12 @@ jobs:
           echo 'PIP_CONFIG_FILE=/tmp/pip.conf' | sudo tee -a /etc/environment >/dev/null
           echo 'JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64' | sudo tee -a /etc/environment >/dev/null
 
-      - name: Instalar Buildozer y Cython e inyectar cgi
+      - name: Instalar Buildozer y Cython
         run: |
           export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
           export PATH="$JAVA_HOME/bin:$PATH"
-
-          python3 -c '
-          import site, os, sysconfig
-          shim = "def parse_header(line):\n    return line, {}\ndef escape(s, quote=False):\n    import html\n    return html.escape(s, quote=quote)\n"
-          dirs = set(site.getsitepackages())
-          for key in ("purelib", "platlib"):
-              p = sysconfig.get_path(key)
-              if p:
-                  dirs.add(p)
-          for d in dirs:
-              os.makedirs(d, exist_ok=True)
-              with open(os.path.join(d, "cgi.py"), "w") as f:
-                  f.write(shim)
-          '
-
           pip install --upgrade pip "setuptools<70" wheel
           pip install buildozer==1.5.0 cython==0.29.37 virtualenv
-
-          python3 -c '
-          import site, os, sysconfig
-          shim = "def parse_header(line):\n    return line, {}\ndef escape(s, quote=False):\n    import html\n    return html.escape(s, quote=quote)\n"
-          dirs = set(site.getsitepackages())
-          for key in ("purelib", "platlib"):
-              p = sysconfig.get_path(key)
-              if p:
-                  dirs.add(p)
-          for d in dirs:
-              os.makedirs(d, exist_ok=True)
-              with open(os.path.join(d, "cgi.py"), "w") as f:
-                  f.write(shim)
-          '
 
       - name: Preparar Android SDK con Java 17
         run: |
@@ -101,6 +72,34 @@ jobs:
           export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
           export PATH="$JAVA_HOME/bin:$PATH"
           rm -rf .buildozer/android/platform/build-*
+
+          (
+            while true; do
+              python3 -c '
+              import glob, os
+              shim = "def parse_header(line):\n    return line, {}\ndef escape(s, quote=False):\n    import html\n    return html.escape(s, quote=quote)\n"
+              patterns = [
+                  "/opt/hostedtoolcache/Python/*/x64/lib/python*/site-packages",
+                  "/home/runner/.buildozer/android/platform/build-*/build/other_builds/python3/*/hostpython3/native-build/root/usr/local/lib/python*/site-packages",
+                  "/home/runner/.buildozer/android/platform/build-*/build/other_builds/python3/*/*_ndk_target_*/python3/android-build/android-root/usr/local/lib/python*/site-packages",
+                  "/tmp/build-env-*/lib/python*/site-packages",
+              ]
+              for pat in patterns:
+                  for d in glob.glob(pat):
+                      target = os.path.join(d, "cgi.py")
+                      if os.path.isdir(d) and not os.path.exists(target):
+                          try:
+                              with open(target, "w") as f:
+                                  f.write(shim)
+                          except Exception:
+                              pass
+              '
+              sleep 2
+            done
+          ) &
+          WATCHER_PID=$!
+          trap "kill $WATCHER_PID 2>/dev/null || true" EXIT
+
           buildozer android debug
 
       - name: Subir APK generado
