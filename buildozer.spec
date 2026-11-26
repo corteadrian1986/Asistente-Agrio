@@ -9,7 +9,7 @@ source.include_exts = py,png,jpg,kv,atlas,json,env
 
 version = 1.0.0
 
-requirements = python3,kivy==2.2.1,pyjnius,urllib3,chardet,charset-normalizer,idna,certifi,requests,gtts,click,legacy-cgi
+requirements = python3,kivy==2.2.1,pyjnius,urllib3,idna,certifi,gtts
 
 orientation = portrait
 fullscreen = 0
