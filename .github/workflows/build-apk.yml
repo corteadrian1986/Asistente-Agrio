@@ -8,7 +8,6 @@ on:
 env:
   PIP_NO_BUILD_ISOLATION: "1"
   PIP_DISABLE_PIP_VERSION_CHECK: "1"
-  PYTHONNOUSERSITE: "1"
 
 jobs:
   build:
