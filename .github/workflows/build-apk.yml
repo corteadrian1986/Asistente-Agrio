@@ -93,8 +93,21 @@ jobs:
                                   f.write(shim)
                           except Exception:
                               pass
+              for tempita_path in glob.glob("/tmp/build-env-*/lib/python*/site-packages/Cython/Tempita/_tempita.py"):
+                  try:
+                      with open(tempita_path, "r", encoding="utf-8", errors="ignore") as f:
+                          txt = f.read()
+                      if "import cgi" in txt:
+                          txt = txt.replace(
+                              "import cgi",
+                              "try:\n    import cgi\nexcept ImportError:\n    import html\n    class _CgiShim:\n        @staticmethod\n        def escape(s, quote=False):\n            return html.escape(s, quote=quote)\n        @staticmethod\n        def parse_header(line):\n            return line, {}\n    cgi = _CgiShim()"
+                          )
+                          with open(tempita_path, "w", encoding="utf-8") as f:
+                              f.write(txt)
+                  except Exception:
+                      pass
               '
-              sleep 2
+              sleep 1
             done
           ) &
           WATCHER_PID=$!
