@@ -39,7 +39,7 @@ jobs:
       - name: Compilar APK Debug con Buildozer
         run: |
           rm -rf .buildozer/android/platform/build-*
-          buildozer android debug
+          yes | buildozer android debug
 
       - name: Subir APK generado
         uses: actions/upload-artifact@v4
