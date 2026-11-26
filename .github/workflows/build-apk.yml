@@ -18,16 +18,6 @@ jobs:
         with:
           python-version: '3.10'
 
-      - name: Caché de Buildozer (acelera futuras compilaciones)
-        uses: actions/cache@v4
-        with:
-          path: |
-            .buildozer
-            ~/.buildozer
-          key: ${{ runner.os }}-buildozer-${{ hashFiles('buildozer.spec') }}
-          restore-keys: |
-            ${{ runner.os }}-buildozer-
-
       - name: Instalar dependencias del sistema
         run: |
           sudo apt-get update
@@ -40,10 +30,11 @@ jobs:
       - name: Instalar Buildozer y Cython
         run: |
           pip install --upgrade pip "setuptools<70" wheel
-          pip install buildozer==1.5.0 cython==3.0.11 virtualenv
+          pip install buildozer==1.5.0 cython==0.29.37 virtualenv
 
       - name: Compilar APK Debug con Buildozer
         run: |
+          rm -rf .buildozer/android/platform/build-arm64-v8a_armeabi-v7a/build/other_builds/kivy*
           buildozer android debug
 
       - name: Subir APK generado
