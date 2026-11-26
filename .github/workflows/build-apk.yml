@@ -34,6 +34,11 @@ jobs:
             cmake libffi-dev libssl-dev python3-setuptools
           sudo update-java-alternatives -s java-1.17.0-openjdk-amd64 || true
 
+          sudo mkdir -p /etc
+          printf "[global]\nno-build-isolation = true\n" | sudo tee /etc/pip.conf >/dev/null
+          mkdir -p ~/.config/pip
+          printf "[global]\nno-build-isolation = true\n" > ~/.config/pip/pip.conf
+
       - name: Instalar Buildozer y Cython
         run: |
           export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
