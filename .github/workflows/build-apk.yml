@@ -8,7 +8,6 @@ on:
 env:
   PIP_NO_BUILD_ISOLATION: "1"
   PIP_DISABLE_PIP_VERSION_CHECK: "1"
-  PIP_CONFIG_FILE: "/tmp/pip.conf"
   JAVA_HOME: "/usr/lib/jvm/java-17-openjdk-amd64"
 
 jobs:
@@ -35,17 +34,12 @@ jobs:
             cmake libffi-dev libssl-dev python3-setuptools
           sudo update-java-alternatives -s java-1.17.0-openjdk-amd64 || true
 
-          printf "[global]\nno-build-isolation = true\n" > /tmp/pip.conf
-          echo 'PIP_NO_BUILD_ISOLATION=1' | sudo tee -a /etc/environment >/dev/null
-          echo 'PIP_CONFIG_FILE=/tmp/pip.conf' | sudo tee -a /etc/environment >/dev/null
-          echo 'JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64' | sudo tee -a /etc/environment >/dev/null
-
       - name: Instalar Buildozer y Cython
         run: |
           export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
           export PATH="$JAVA_HOME/bin:$PATH"
           pip install --upgrade pip "setuptools<70" wheel
-          pip install buildozer==1.5.0 cython==0.29.37 virtualenv
+          pip install --no-build-isolation buildozer==1.5.0 cython==0.29.37 virtualenv
 
       - name: Preparar Android SDK con Java 17
         run: |
@@ -72,47 +66,6 @@ jobs:
           export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
           export PATH="$JAVA_HOME/bin:$PATH"
           rm -rf .buildozer/android/platform/build-*
-
-          (
-            while true; do
-              python3 -c '
-              import glob, os
-              shim = "def parse_header(line):\n    return line, {}\ndef escape(s, quote=False):\n    import html\n    return html.escape(s, quote=quote)\n"
-              patterns = [
-                  "/opt/hostedtoolcache/Python/*/x64/lib/python*/site-packages",
-                  "/home/runner/.buildozer/android/platform/build-*/build/other_builds/python3/*/hostpython3/native-build/root/usr/local/lib/python*/site-packages",
-                  "/home/runner/.buildozer/android/platform/build-*/build/other_builds/python3/*/*_ndk_target_*/python3/android-build/android-root/usr/local/lib/python*/site-packages",
-                  "/tmp/build-env-*/lib/python*/site-packages",
-              ]
-              for pat in patterns:
-                  for d in glob.glob(pat):
-                      target = os.path.join(d, "cgi.py")
-                      if os.path.isdir(d) and not os.path.exists(target):
-                          try:
-                              with open(target, "w") as f:
-                                  f.write(shim)
-                          except Exception:
-                              pass
-              for tempita_path in glob.glob("/tmp/build-env-*/lib/python*/site-packages/Cython/Tempita/_tempita.py"):
-                  try:
-                      with open(tempita_path, "r", encoding="utf-8", errors="ignore") as f:
-                          txt = f.read()
-                      if "import cgi" in txt:
-                          txt = txt.replace(
-                              "import cgi",
-                              "try:\n    import cgi\nexcept ImportError:\n    import html\n    class _CgiShim:\n        @staticmethod\n        def escape(s, quote=False):\n            return html.escape(s, quote=quote)\n        @staticmethod\n        def parse_header(line):\n            return line, {}\n    cgi = _CgiShim()"
-                          )
-                          with open(tempita_path, "w", encoding="utf-8") as f:
-                              f.write(txt)
-                  except Exception:
-                      pass
-              '
-              sleep 1
-            done
-          ) &
-          WATCHER_PID=$!
-          trap "kill $WATCHER_PID 2>/dev/null || true" EXIT
-
           buildozer android debug
 
       - name: Subir APK generado
