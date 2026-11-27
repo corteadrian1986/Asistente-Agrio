@@ -34,11 +34,6 @@ jobs:
             cmake libffi-dev libssl-dev python3-setuptools
           sudo update-java-alternatives -s java-1.17.0-openjdk-amd64 || true
 
-          sudo mkdir -p /etc
-          printf "[global]\nno-build-isolation = true\n" | sudo tee /etc/pip.conf >/dev/null
-          mkdir -p ~/.config/pip
-          printf "[global]\nno-build-isolation = true\n" > ~/.config/pip/pip.conf
-
       - name: Instalar Buildozer y Cython
         run: |
           export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
@@ -70,6 +65,8 @@ jobs:
         run: |
           export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
           export PATH="$JAVA_HOME/bin:$PATH"
+          export PIP_NO_BUILD_ISOLATION=1
+          export PIP_DISABLE_PIP_VERSION_CHECK=1
           rm -rf .buildozer/android/platform/build-*
           buildozer android debug
 
