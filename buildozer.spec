@@ -1,81 +1,22 @@
-name: Compilar APK de Agrio
+[app]
+title = Agrio
+package.name = agrio
+package.domain = org.adrian.agrio
+source.dir = .
+source.include_exts = py,png,jpg,jpeg,kv,atlas,json,txt,wav,mp3,ogg
+version = 0.1.0
+requirements = python3,kivy==2.2.1,pyjnius,gtts
+orientation = portrait
+fullscreen = 0
+android.presplash_color = #000000
+android.permissions = INTERNET,RECORD_AUDIO,MODIFY_AUDIO_SETTINGS
+android.api = 33
+android.minapi = 24
+android.ndk = 28c
+android.archs = arm64-v8a, armeabi-v7a
+android.allow_backup = True
+p4a.bootstrap = sdl2
 
-on:
-  push:
-    branches: [ main, master ]
-  workflow_dispatch:
-
-env:
-  PIP_NO_BUILD_ISOLATION: "1"
-  PIP_DISABLE_PIP_VERSION_CHECK: "1"
-  JAVA_HOME: "/usr/lib/jvm/java-17-openjdk-amd64"
-
-jobs:
-  build:
-    runs-on: ubuntu-22.04
-    timeout-minutes: 35
-
-    steps:
-      - name: Descargar código del repositorio
-        uses: actions/checkout@v4
-
-      - name: Configurar Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.10'
-
-      - name: Instalar dependencias del sistema y Java 17
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            build-essential git zip unzip openjdk-17-jdk wget \
-            autoconf automake libtool libltdl-dev pkg-config m4 \
-            zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo5 \
-            cmake libffi-dev libssl-dev python3-setuptools
-          sudo update-java-alternatives -s java-1.17.0-openjdk-amd64 || true
-
-          sudo mkdir -p /etc
-          printf "[global]\nno-build-isolation = true\n" | sudo tee /etc/pip.conf >/dev/null
-          mkdir -p ~/.config/pip
-          printf "[global]\nno-build-isolation = true\n" > ~/.config/pip/pip.conf
-
-      - name: Instalar Buildozer y Cython
-        run: |
-          export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
-          export PATH="$JAVA_HOME/bin:$PATH"
-          pip install --upgrade pip "setuptools<70" wheel
-          pip install --no-build-isolation buildozer==1.5.0 cython==0.29.37 virtualenv
-
-      - name: Preparar Android SDK con Java 17
-        run: |
-          export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
-          export PATH="$JAVA_HOME/bin:$PATH"
-
-          SDK_DIR="$HOME/.buildozer/android/platform/android-sdk"
-          mkdir -p "$SDK_DIR/cmdline-tools" "$SDK_DIR/tools/bin" "$SDK_DIR/licenses"
-
-          wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O /tmp/cmdline-tools.zip
-          unzip -q /tmp/cmdline-tools.zip -d "$SDK_DIR/cmdline-tools"
-          mv "$SDK_DIR/cmdline-tools/cmdline-tools" "$SDK_DIR/cmdline-tools/latest"
-
-          printf '#!/bin/sh\nexport JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64\nexport PATH="$JAVA_HOME/bin:$PATH"\nexec "'"$SDK_DIR/cmdline-tools/latest/bin/sdkmanager"'" "$@"\n' > "$SDK_DIR/tools/bin/sdkmanager"
-          chmod +x "$SDK_DIR/tools/bin/sdkmanager"
-
-          printf "8933bad161af4178b1185d1a37fbf41ea5269c55\nd56f5187479451eabf01fb78af6dfcb131a6481e\n24333f8a63b6825ea9c5514f83c2829b004d1fee\n" > "$SDK_DIR/licenses/android-sdk-license"
-          printf "84831b9409646a918e30573bab4c9c91346d8abd\n" > "$SDK_DIR/licenses/android-sdk-preview-license"
-
-          yes | "$SDK_DIR/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$SDK_DIR" "platform-tools" "platforms;android-33" "build-tools;33.0.2" || true
-
-      - name: Compilar APK Debug con Buildozer
-        run: |
-          export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
-          export PATH="$JAVA_HOME/bin:$PATH"
-          rm -rf .buildozer/android/platform/build-*
-          buildozer android debug
-
-      - name: Subir APK generado
-        uses: actions/upload-artifact@v4
-        with:
-          name: agrio-apk
-          path: bin/*.apk
-          if-no-files-found: error
+[buildozer]
+log_level = 2
+warn_on_root = 1
