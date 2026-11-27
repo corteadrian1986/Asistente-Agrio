@@ -17,6 +17,11 @@ android.archs = arm64-v8a, armeabi-v7a
 android.allow_backup = True
 p4a.bootstrap = sdl2
 
+# --- Fijar versión de python-for-android ---
+p4a.branch = master
+# Si tienes un hash de commit estable de python-for-android, descomenta y ponlo aquí:
+# p4a.commit =
+
 [buildozer]
 log_level = 2
 warn_on_root = 1
